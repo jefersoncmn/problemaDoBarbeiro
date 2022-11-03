@@ -9,3 +9,9 @@ Um cliente aguarda pelo barbeiro se há ao menos uma cadeira vazia na barbearia,
         então o cliente acorda-o. 
     Existem <n> cadeiras na barbearia.
 Faça um programa para a classe BarbeiroDorminhoco utlizando monitor.
+
+
+Solução:
+O barbeiro vai esperar
+os clientes também
+ - Tem que ver o ponto de qual thread do cliente vem primeiro

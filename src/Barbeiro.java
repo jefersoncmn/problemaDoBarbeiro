@@ -1,33 +1,56 @@
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 //Runnable pq é thread
 public class Barbeiro implements Runnable {
     private int cadeirasDeEspera; //Quantidade de cadeiras para clientes esperarem o atendimento
     boolean cadeiraOcupada = false;
-    int[] clientes; //numero aleatório de clientes
+    //----------------
+    List<Cliente> listaDeClientes;
+    List<Thread> clientes;
+    //--------------
     boolean barbeiroDormindo = false;//true = dorme e false = atende
     private String nomeDaThread;
-    private int clientesNovos;//Gera um numero random até o numero maximo de clientes
+    private int numeroMaximoDeClientes = 5;//Gera um numero random até o numero maximo de clientes
     int numeroDeClientes; 
 
-    long tempoDeAtendimento = 1000; //O cara corta rápido
-    long tempoDeSoneca = 2000; //O cara dorme muito
+    long tempoDeAtendimento = 4000; 
+    long tempoDeSoneca = 2000;
 
 
     Barbeiro(String nomeDaThread, int cadeirasDeEspera, int clientes){
-        this.clientesNovos = clientes;//Inicializa o máximo random de clientes
         this.nomeDaThread = nomeDaThread;
         this.cadeirasDeEspera = cadeirasDeEspera;
-        System.out.println("O barbeiro "+nomeDaThread+" chegou no salão.");
+        System.out.println("[Barbeiro] "+nomeDaThread+" chegou no salão.");
+
+        this.listaDeClientes = new ArrayList<Cliente>();
+        this.clientes = new ArrayList<Thread>();
+
+        GerarClientes(new Random());//Cria os clientes
     }
 
-    public void Clientes(){
-        Random numeroAleatorioDeClientes = new Random();
-        numeroDeClientes = numeroAleatorioDeClientes.nextInt(clientesNovos);//Gera o total de clientes randomicos
-        clientes = new int[numeroDeClientes];//da o tamanho do vetor clientes
+    /*
+     * Responsável por criar os clientes
+     */
+    public void GerarClientes(Random numeroAleatorioDeClientes){
+        numeroDeClientes = numeroAleatorioDeClientes.nextInt(numeroMaximoDeClientes);//Gera o total de clientes randomicos
+        System.out.println("[Barbeiro] Entrou(aram) "+numeroDeClientes+" cliente(s) no salão.");
+        for(int i = 0; i< numeroDeClientes; i++){
+            Cliente novoCliente = new Cliente();
+            novoCliente.setPosicaoNaFila(i + this.listaDeClientes.size()-1);//Defina a posição que cada clienten tem na fila
+            this.listaDeClientes.add(novoCliente);
+            Thread threadCliente = new Thread(novoCliente);//Cria thread do cliente
+            threadCliente.start();//Inicia a thread do cliente
+            this.clientes.add(threadCliente);
+        }
 
-        for(int i = 0; numeroDeClientes < clientes.length; i++){
-            clientes[i] = i;
+        
+    }
+
+    void atualizarPosicoesDosClientesNaFila(){
+        for(int i = 0; i < this.listaDeClientes.size(); i++){
+            this.listaDeClientes.get(i).setPosicaoNaFila(i);
         }
     }
 
@@ -36,11 +59,30 @@ public class Barbeiro implements Runnable {
      * @throws InterruptedException
      */
     public void BarbeiroDorme() throws InterruptedException{
-        System.out.println("Não existe(m) cliente(s) no salão do Barbeiro "+nomeDaThread+".");
-        System.out.println("O Barbeiro "+nomeDaThread+" está esperando a chegada de clientes.");
+        System.out.println("[Barbeiro] Não existe(m) cliente(s) no salão do Barbeiro "+nomeDaThread+".");
+        System.out.println("[Barbeiro] "+nomeDaThread+" está esperando a chegada de clientes.");
         Thread.sleep(tempoDeSoneca);//Como não tem clientes, o barbeiro vai a mimir. A thread vai esperar 2 segundos.
-        System.out.println("A cadeira do Barbeiro "+nomeDaThread+ " está livre");
-        Clientes();
+        System.out.println("[Barbeiro] A cadeira do Barbeiro "+nomeDaThread+ " está livre");
+        GerarClientes(new Random());
+    }
+    
+    void RemoverExcessoDeClientes(){
+        if(numeroDeClientes > cadeirasDeEspera){
+            //verifica quantos clientes irão embora
+            int clientesQueVaoEmbora = numeroDeClientes - cadeirasDeEspera;
+            //verifica quantos clientes esperam
+            numeroDeClientes = numeroDeClientes - clientesQueVaoEmbora;
+            //Enquanto o contador for menor que o numero 
+            for(int i = cadeirasDeEspera - 1; i < clientes.size() - 1; i++){ //Remove a galera que não arrumou cadeira pra esperar
+                // clientes[i] = null;
+                clientes.remove(i);
+                listaDeClientes.remove(i);
+            }
+            //Mostra quantos clientes foram embora
+            System.out.println("[Barbeiro] "+ clientesQueVaoEmbora + " clientes foram embora! :(");
+            //Mostra quantos clientes ficaram
+            System.out.println("[Barbeiro] "+numeroDeClientes + " clientes estão esperando.");
+        }
     }
 
     /**
@@ -49,56 +91,38 @@ public class Barbeiro implements Runnable {
      */
     public void BarbeiroAtende() throws InterruptedException{
         if(numeroDeClientes != 0){ //Se tiver clientes
-            if(numeroDeClientes > 1 && cadeiraOcupada == false){//se tem mais de um cliente e a cadeira não está ocupada
-                System.out.println("Entrou(aram) "+numeroDeClientes+" clinte(s) no salão.");
-            } else { //Se tem mais de um cliente e tem cadeiras ocupadas, tem clientes esperando
-                System.out.println("Existe(m) "+numeroDeClientes+" cliente(s) esperando atendimento "+nomeDaThread);
-            }
-            //se há clientes, 1 pode já ser atendido
-            System.out.println("Um cliente ocupou a cadeira do barbeiro "+nomeDaThread);
-            numeroDeClientes--;//Cliente atendido
-            System.out.println("Um clinte está sendo atendido pelo barbeiro "+nomeDaThread);
-            cadeiraOcupada = true;//a cadeira do barbeiro está ocupada
-            Thread.sleep(tempoDeAtendimento);//barbeiro atendendo, a thread espera o atendimento terminar
+            System.out.println("[Barbeiro] Existe(m) "+numeroDeClientes+" cliente(s) esperando atendimento "+nomeDaThread);
             
-            if(numeroDeClientes > cadeirasDeEspera){
-                //verifica quantos clientes irão embora
-                int clientesQueVaoEmbora = numeroDeClientes - cadeirasDeEspera;
-                //verifica quantos clientes esperam
-                numeroDeClientes = numeroDeClientes - clientesQueVaoEmbora;
-                //Enquanto o contador for menor que o numero 
-                for(int i = 0; i < clientes.length - 1; i++){
-                    clientes[i] = 0;
+            synchronized(this.clientes.get(0)){
+                try {
+                    System.out.println("[Barbeiro] Aguardando o cliente se sentar...");
+                    this.clientes.get(0).join();//Faz a Thread do barbeiro parar até terminar essa thread
+                    cadeiraOcupada = true;//a cadeira do barbeiro está ocupada
+                    System.out.println("[Barbeiro] Um cliente está sendo atendido pelo barbeiro "+nomeDaThread);
+                    Thread.sleep(tempoDeAtendimento);//barbeiro atendendo, a thread espera o atendimento terminar
+                } catch (Exception e) {
+                    System.out.println("Problema no synchronized!");
+                } finally {
+                    numeroDeClientes--;//Cliente atendido
+                    this.clientes.remove(0);
+                    this.listaDeClientes.remove(0);
+                    atualizarPosicoesDosClientesNaFila();
+                    //Mostra qual barbeiro já atendeu
+                    System.out.println("[Barbeiro] Um cliente já foi atendido pelo barbeiro "+nomeDaThread);
+                    cadeiraOcupada = false;
                 }
-                //Atualiza o total de clientes
-                for(int j = 0; j < numeroDeClientes; j++){
-                    clientes[j] = j + 1;
-                }
-                //Mostra quantos clientes foram embora
-                System.out.println(clientesQueVaoEmbora + " clientes foram embora! :(");
-                //Mostra quantos clientes ficaram
-                System.out.println(numeroDeClientes + " clientes estão esperando.");
             }
-            //Mostra qual barbeiro já atendeu
-            System.out.println("Um cliente já foi atendido pelo barbeiro "+nomeDaThread);
-            //Se o numero de cliente for igual a 1
-
-        } else if(numeroDeClientes == 1){
-            //Mostra qual barbeiro está livre
-            System.out.println("A cadeira do barbeiro "+nomeDaThread+" está livre.");
-            //Avisa que o barbeiro vai atender
-            System.out.println("A cadeira do Barbeiro "+nomeDaThread+" está ocupada, não existem clientes esperando.");
-            Thread.sleep(tempoDeAtendimento);//Thread espera para atender esse cliente
-            numeroDeClientes--;//Cliente atendido
-            //Mostra qual barbeiro já atendeu
-            System.out.println("Um cliente já foi atendido pelo barbeiro "+nomeDaThread);
+           
+            RemoverExcessoDeClientes();
+            
         } else {
             //Avisa qual barbeiro está livre
-            System.out.println("A cadeira do barbeiro "+nomeDaThread+" está livre.");
+            System.out.println("[Barbeiro] A cadeira do barbeiro "+nomeDaThread+" está livre.");
             //Libera as cadeiras de espera
             cadeiraOcupada = false;
         }
     }
+
 
     @Override
     public void run() {//Método de execução da thread
