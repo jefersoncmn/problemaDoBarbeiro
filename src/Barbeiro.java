@@ -29,7 +29,7 @@ public class Barbeiro implements Runnable {
 
         GerarClientes(new Random());//Cria os clientes
     }
-
+    
     /*
      * Responsável por criar os clientes
      */
@@ -75,6 +75,8 @@ public class Barbeiro implements Runnable {
             //Enquanto o contador for menor que o numero 
             for(int i = cadeirasDeEspera - 1; i < clientes.size() - 1; i++){ //Remove a galera que não arrumou cadeira pra esperar
                 // clientes[i] = null;
+                Thread clienteRemovido = clientes.get(i);
+                clienteRemovido.interrupt();
                 clientes.remove(i);
                 listaDeClientes.remove(i);
             }
@@ -104,6 +106,8 @@ public class Barbeiro implements Runnable {
                     System.out.println("Problema no synchronized!");
                 } finally {
                     numeroDeClientes--;//Cliente atendido
+                    Thread clienteRemovido = clientes.get(0);
+                    clienteRemovido.interrupt();
                     this.clientes.remove(0);
                     this.listaDeClientes.remove(0);
                     atualizarPosicoesDosClientesNaFila();
